@@ -78,6 +78,7 @@ public class Submitjob {
             System.err.println("Unable to get the portal IP address");
         }
 
+//        MultiInfrastructureJobSubmission multiInfrastructureJobSubmission = new MultiInfrastructureJobSubmission(description);
         MultiInfrastructureJobSubmission multiInfrastructureJobSubmission = new MultiInfrastructureJobSubmission("jdbc:mysql://localhost/userstracking", "tracking_user",
                 "usertracking", description);
         if(p.getUserEmail() != null){
