@@ -6,7 +6,6 @@
 package it.infn.ct.imagine.pojos;
 
 import java.util.List;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**

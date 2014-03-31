@@ -13,6 +13,8 @@ import it.infn.ct.imagine.pojos.Infrastructure;
 import it.infn.ct.imagine.pojos.JobDescription;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.cert.X509Certificate;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -32,43 +34,59 @@ public class Submitjob {
 
     @Context
     private UriInfo context;
+    
+    private final String DN;
 
-    /**api
+    /**
      * Creates a new instance of Submitjob
+     * @param request
      */
-    public Submitjob() {
+    public Submitjob(@Context HttpServletRequest request) {
+        X509Certificate[] obj = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        this.DN = obj[0].getSubjectX500Principal().getName("RFC2253");
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response submitJob(SubmissionObject p) {
+        
         JobDescription jobDescription = p.getJobDescription();
-        Credential credential = p.getCredential();
+
         Infrastructure infrastructure = p.getInfrastructure();
         GEJobDescription description = new GEJobDescription();
         description.setExecutable(jobDescription.getExecutable());
         description.setOutputPath("/tmp");
         description.setOutput(jobDescription.getOutput());
         description.setError(jobDescription.getError());
-
+        description.setInputFiles(jobDescription.getInputFiles());
+        description.setOutputFiles(jobDescription.getOutputFiles());
+        description.setArguments(jobDescription.getArguments());
         InfrastructureInfo infrastructures[] = new InfrastructureInfo[1];
 
-        String wmsList[] = infrastructure.getResourceManagers().split(",");
-        String middleware = wmsList[0].toString().substring(0, wmsList[0].toString().indexOf(":"));
-        switch (credential.getType()) {
-            case proxy:
-                infrastructures[0] = new InfrastructureInfo("gridit", infrastructure.getInformationSystem(), wmsList, credential.getProxyPath());
-                break;
-            case eTokenServer:
-                infrastructures[0] = new InfrastructureInfo("gridit", infrastructure.getInformationSystem(), wmsList, credential.getServerName(), credential.getServerPort(), credential.getProxyId(), credential.getVo(), credential.getFqan());
-                break;
-            case keystore:
-                infrastructures[0] = new InfrastructureInfo("unicore", middleware, credential.getKeystorePath(), credential.getKeystorePassword(), wmsList);
-                break;
-            case UserPass:
-                infrastructures[0] = new InfrastructureInfo("SSH infrastructure", middleware, credential.getUsername(), credential.getPassword(), wmsList);
-                break;
+        if (infrastructure != null) {
+            String wmsList[] = infrastructure.getResourceManagers().split(",");
+            String infrastructureName= (infrastructure.getName() != null) ? infrastructure.getName() : "";
+            String middleware = wmsList[0].toString().substring(0, wmsList[0].toString().indexOf(":"));
+            Credential credential = p.getCredential();
+            switch (credential.getType()) {
+                case proxy:
+                    infrastructures[0] = new InfrastructureInfo("gridit", infrastructure.getInformationSystem(), wmsList, credential.getProxyPath());
+                    break;
+                case eTokenServer:
+                    infrastructures[0] = new InfrastructureInfo(infrastructureName, infrastructure.getInformationSystem(), wmsList, credential.getServerName(), credential.getServerPort(), credential.getProxyId(), credential.getVo(), credential.getFqan());
+                    break;
+                case keystore:
+                    infrastructures[0] = new InfrastructureInfo("unicore", middleware, credential.getKeystorePath(), credential.getKeystorePassword(), wmsList);
+                    break;
+                case UserPass:
+                    infrastructures[0] = new InfrastructureInfo("SSH infrastructure", middleware, credential.getUsername(), credential.getPassword(), wmsList);
+                    break;
+            }
+        } else {
+            //TODO get infrastructure from somewhere
+            System.err.println("You have to specify infrastructure");
+            return Response.status(Response.Status.BAD_REQUEST).entity("You have to specify infrastructure").build();
         }
 
         String portalIPAddress = "";
@@ -78,14 +96,14 @@ public class Submitjob {
             System.err.println("Unable to get the portal IP address");
         }
 
-//        MultiInfrastructureJobSubmission multiInfrastructureJobSubmission = new MultiInfrastructureJobSubmission(description);
-        MultiInfrastructureJobSubmission multiInfrastructureJobSubmission = new MultiInfrastructureJobSubmission("jdbc:mysql://localhost/userstracking", "tracking_user",
-                "usertracking", description);
-        if(p.getUserEmail() != null){
+        MultiInfrastructureJobSubmission multiInfrastructureJobSubmission = new MultiInfrastructureJobSubmission(description);
+//        MultiInfrastructureJobSubmission multiInfrastructureJobSubmission = new MultiInfrastructureJobSubmission("jdbc:mysql://localhost/userstracking", "tracking_user",
+//                "usertracking", description);
+        if (p.getUserEmail() != null) {
             multiInfrastructureJobSubmission.setUserEmail(p.getUserEmail());
         }
-        multiInfrastructureJobSubmission.submitJobAsync(infrastructures[0], p.getCommonName(), portalIPAddress, p.getApplication(), p.getIdentifier());
-
+        multiInfrastructureJobSubmission.submitJobAsync(infrastructures[0], p.getCommonName() + ":" + DN, portalIPAddress, p.getApplication(), p.getIdentifier());
+        
         return Response.status(Response.Status.ACCEPTED).entity(p).build();
     }
 }

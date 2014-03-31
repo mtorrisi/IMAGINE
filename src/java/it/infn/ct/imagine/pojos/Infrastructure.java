@@ -10,12 +10,21 @@ package it.infn.ct.imagine.pojos;
  */
 public class Infrastructure {
 
+    String name;
     String resourceManagers;
     String informationSystem;
     String jobQueue;
     String ceList;
 
     public Infrastructure() {
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getResourceManagers() {

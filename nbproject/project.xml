@@ -29,7 +29,6 @@
                 </library>
                 <library dirs="200">
                     <file>${file.reference.jsaga-job-management-1.5.9.jar}</file>
-                    <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
                 <library dirs="200">
                     <file>${file.reference.jersey-multipart-1.18.jar}</file>
