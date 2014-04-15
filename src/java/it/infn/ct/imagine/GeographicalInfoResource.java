@@ -5,8 +5,17 @@
 package it.infn.ct.imagine;
 
 import it.infn.ct.GridEngine.UsersTracking.UsersTrackingDBInterface;
+import it.infn.ct.imagine.filter.AuthenticationRequestWrapper;
+import it.infn.ct.imagine.filter.ClientDao;
+import it.infn.ct.imagine.filter.FilterRequest;
 import it.infn.ct.imagine.pojos.GeographicalInfo;
 import java.util.ArrayList;
+import javax.ejb.EJB;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.PersistenceContext;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -24,16 +33,29 @@ import javax.ws.rs.core.UriInfo;
 public class GeographicalInfoResource {
 
 //    UsersTrackingDBInterface dbInterface = new UsersTrackingDBInterface("jdbc:mysql://localhost:3306/userstracking", "tracking_user", "usertracking");
-    private final UsersTrackingDBInterface dbInterface;
+    private final UsersTrackingDBInterface dbInterface= new UsersTrackingDBInterface();
 
     @Context
     private UriInfo context;
+    @PersistenceContext(unitName = "IMAGINEPU")
+    private final EntityManagerFactory factory=Persistence.createEntityManagerFactory("IMAGINEPU");
+    
+    private EntityManager em;
+    
+    @EJB
+    ClientDao clientDao = new ClientDao();
+    
+    private final FilterRequest filter = new FilterRequest();
+    
+    private final String DN;
 
     /**
      * Creates a new instance of GeographicalInfoResource
+     * @param request
      */
-    public GeographicalInfoResource() {
-        dbInterface = new UsersTrackingDBInterface();
+    public GeographicalInfoResource(@Context HttpServletRequest request) {
+        AuthenticationRequestWrapper requestWrapper = new AuthenticationRequestWrapper(request);
+        this.DN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
     }
 
     /**
@@ -89,7 +111,7 @@ public class GeographicalInfoResource {
 
         String[] portalNames = getPortalsNames();
         if (portalNames != null && portalNames.length != 0) {
-            result = retrieveGeoInfos(portalNames[portalId], commonName);
+            result = retrieveGeoInfos(portalNames[portalId], commonName + ":" + DN);
         }
         return result;
     }

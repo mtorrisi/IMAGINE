@@ -8,12 +8,19 @@ import it.infn.ct.imagine.pojos.SubmissionObject;
 import it.infn.ct.GridEngine.Job.InfrastructureInfo;
 import it.infn.ct.GridEngine.Job.MultiInfrastructureJobSubmission;
 import it.infn.ct.GridEngine.JobResubmission.GEJobDescription;
+import it.infn.ct.imagine.filter.AuthenticationRequestWrapper;
+import it.infn.ct.imagine.filter.ClientDao;
+import it.infn.ct.imagine.filter.FilterRequest;
 import it.infn.ct.imagine.pojos.Credential;
 import it.infn.ct.imagine.pojos.Infrastructure;
 import it.infn.ct.imagine.pojos.JobDescription;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.cert.X509Certificate;
+import javax.ejb.EJB;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -35,22 +42,22 @@ public class Submitjob {
     @Context
     private UriInfo context;
     
-    private final String DN;
-
-    /**
-     * Creates a new instance of Submitjob
-     * @param request
-     */
-    public Submitjob(@Context HttpServletRequest request) {
-        X509Certificate[] obj = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
-        this.DN = obj[0].getSubjectX500Principal().getName("RFC2253");
-    }
+    @PersistenceContext(unitName = "IMAGINEPU")
+    private final EntityManagerFactory factory=Persistence.createEntityManagerFactory("IMAGINEPU");
+    
+    private EntityManager em;
+    
+    @EJB
+    ClientDao clientDao = new ClientDao();
+    
+    private final FilterRequest filter = new FilterRequest();
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response submitJob(SubmissionObject p) {
-        
+    public Response submitJob(@Context HttpServletRequest request, SubmissionObject p) {
+        AuthenticationRequestWrapper requestWrapper = new AuthenticationRequestWrapper(request);
+        String DN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
         JobDescription jobDescription = p.getJobDescription();
 
         Infrastructure infrastructure = p.getInfrastructure();

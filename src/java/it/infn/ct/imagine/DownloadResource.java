@@ -7,15 +7,25 @@ package it.infn.ct.imagine;
 import it.infn.ct.GridEngine.Job.JSagaJobSubmission;
 import it.infn.ct.GridEngine.UsersTracking.ActiveInteractions;
 import it.infn.ct.GridEngine.UsersTracking.UsersTrackingDBInterface;
+import it.infn.ct.imagine.filter.AuthenticationRequestWrapper;
+import it.infn.ct.imagine.filter.ClientDao;
+import it.infn.ct.imagine.filter.FilterRequest;
 import it.infn.ct.imagine.pojos.GridInteraction;
 import java.io.File;
 import java.util.Vector;
+import javax.ejb.EJB;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.PersistenceContext;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 /**
@@ -29,6 +39,23 @@ public class DownloadResource {
 //    UsersTrackingDBInterface dbInterface = new UsersTrackingDBInterface("jdbc:mysql://localhost:3306/userstracking", "tracking_user", "usertracking");
     UsersTrackingDBInterface dbInterface = new UsersTrackingDBInterface();
 
+    private final String DN;
+    
+    @PersistenceContext(unitName = "IMAGINEPU")
+    private final EntityManagerFactory factory=Persistence.createEntityManagerFactory("IMAGINEPU");
+    
+    private EntityManager em;
+    
+    @EJB
+    ClientDao clientDao = new ClientDao();
+    
+    private final FilterRequest filter = new FilterRequest();
+
+    public DownloadResource(@Context HttpServletRequest request) {
+        AuthenticationRequestWrapper requestWrapper = new AuthenticationRequestWrapper(request);
+        this.DN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
+    }
+    
     /**
      * Retrieves the output archive for the specified completed job
      * @param commonName
@@ -41,7 +68,7 @@ public class DownloadResource {
     @Produces({"applicaztion/zip"})
     public Response Download(@PathParam("commonName") String commonName, @PathParam("id") int dbId, @DefaultValue("false") @QueryParam("isCollection") boolean isCollection) {
 
-        GridInteraction a = getInteraction(commonName, dbId, false);
+        GridInteraction a = getInteraction(commonName + ":" + this.DN, dbId, false);
         String path = "/tmp";
         if (a != null) {
             if (a.getStatus().equals("DONE")) {

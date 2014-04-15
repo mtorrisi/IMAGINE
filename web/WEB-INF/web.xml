@@ -18,6 +18,7 @@
         <servlet-name>ServletAdaptor</servlet-name>
         <!--url-pattern>/*</url-pattern-->
         <url-pattern>/api/*</url-pattern>
+        <url-pattern>/secure/*</url-pattern>
         <!--url-pattern>/portals</url-pattern>
         <url-pattern>/applications/*</url-pattern-->
     </servlet-mapping>

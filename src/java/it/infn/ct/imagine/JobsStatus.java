@@ -6,17 +6,26 @@ package it.infn.ct.imagine;
 
 import it.infn.ct.GridEngine.UsersTracking.ActiveInteractions;
 import it.infn.ct.GridEngine.UsersTracking.UsersTrackingDBInterface;
+import it.infn.ct.imagine.filter.AuthenticationRequestWrapper;
+import it.infn.ct.imagine.filter.ClientDao;
+import it.infn.ct.imagine.filter.FilterRequest;
 import it.infn.ct.imagine.pojos.GridInteraction;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import javax.ejb.EJB;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 /**
@@ -32,13 +41,21 @@ public class JobsStatus {
     @Context
     private UriInfo context;
     
-//    @Context
-//    HttpServletRequest request;
+    @PersistenceContext(unitName = "IMAGINEPU")
+    private final EntityManagerFactory factory=Persistence.createEntityManagerFactory("IMAGINEPU");
+    
+    private EntityManager em;
+    
+    @EJB
+    ClientDao clientDao = new ClientDao();
+    
+    private final FilterRequest filter = new FilterRequest();// = FilterRequest.getInstance();
+
     private final String DN;
 
-    public JobsStatus(@Context HttpServletRequest request) {
-        X509Certificate[] obj = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
-        this.DN = obj[0].getSubjectX500Principal().getName("RFC2253");
+    public JobsStatus(@Context HttpServletRequest request){
+        AuthenticationRequestWrapper requestWrapper = new AuthenticationRequestWrapper(request);
+        this.DN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
     }
 
     /**
@@ -50,8 +67,11 @@ public class JobsStatus {
     @GET
     @Path("/{commonName}")
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    public List<GridInteraction> getJobStatus(@PathParam("commonName") String commonName) {       
-        return getInteractions(commonName + ":" + DN, false);
+    public List<GridInteraction> getJobStatus(@PathParam("commonName") String commonName) {
+        if(!this.DN.equals(""))
+            return getInteractions(commonName + ":" + DN, false);
+        else
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
     }
 
     /**
@@ -131,7 +151,7 @@ public class JobsStatus {
     @Path("/archive/{commonName}")
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     public List<GridInteraction> getJobArchive(@PathParam("commonName") String commonName) {
-        return getInteractions(commonName+ ":" + DN, true);
+        return getInteractions(commonName + ":" + DN, true);
 
     }
 
