@@ -17,6 +17,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class Error {
 
     private int status;
+    private String statusMessage;
     @XmlAttribute(name = "error-code")
     private int errorCode;
     private String message;
@@ -24,6 +25,7 @@ public class Error {
     public Error(Response.Status status, ErrorType type, ErrorMessage errorMessage) {
     
         this.status = status.getStatusCode();
+        this.statusMessage = status.getReasonPhrase();
         this.errorCode = type.getValue();
         this.message = errorMessage.getMessage();
     }
@@ -34,6 +36,14 @@ public class Error {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public String getStatusMessage() {
+        return statusMessage;
+    }
+
+    public void setStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
     }
 
     public int getErrorCode() {
@@ -57,7 +67,8 @@ public class Error {
         TIMESTAMP_MESSAGE   ("Timestamp provided is out of permitted bound."), 
         INVALID_API_KEY     ("Provided API KEY was not found."), 
         WRONG_SIGNATURE     ("Provided a wrong message digest."), 
-        DISABLED_API_KEY    ("Your API KEY was temporarily disabled.");
+        DISABLED_API_KEY    ("Your API KEY was temporarily disabled."),
+        PROVIDE_AUTHZ       ("Specify the authorization header.");
         private final String message;
 
         ErrorMessage(final String message) {

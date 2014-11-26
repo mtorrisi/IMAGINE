@@ -15,7 +15,8 @@ enum ErrorType {
     OUT_OF_BOUND_TIMESTAMP(1), 
     INVALID_API_KEY(2), 
     WRONG_SIGNATURE(3),
-    DISABLED_API_KEY(4);
+    DISABLED_API_KEY(4),
+    PROVIDE_AUTHZ(5);
     
     private final int value;
     

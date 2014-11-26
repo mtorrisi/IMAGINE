@@ -40,20 +40,20 @@ public class JobsStatus {
 //    UsersTrackingDBInterface dbInterface = new UsersTrackingDBInterface("jdbc:mysql://localhost:3306/userstracking", "tracking_user", "usertracking");
     @Context
     private UriInfo context;
-    
+
     @PersistenceContext(unitName = "IMAGINEPU")
     private final EntityManagerFactory factory=Persistence.createEntityManagerFactory("IMAGINEPU");
-    
+
     private EntityManager em;
-    
+
     @EJB
     ClientDao clientDao = new ClientDao();
-    
+
     private final FilterRequest filter = new FilterRequest();// = FilterRequest.getInstance();
 
     private final String DN;
 
-    public JobsStatus(@Context HttpServletRequest request){
+    public JobsStatus(@Context HttpServletRequest request) {
         AuthenticationRequestWrapper requestWrapper = new AuthenticationRequestWrapper(request);
         this.DN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
     }
@@ -67,11 +67,12 @@ public class JobsStatus {
     @GET
     @Path("/{commonName}")
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    public List<GridInteraction> getJobStatus(@PathParam("commonName") String commonName) {
-        if(!this.DN.equals(""))
+    public List<GridInteraction> getJobStatus(@PathParam("commonName") String commonName)  throws WebApplicationException{
+        if (!this.DN.equals("")) {
             return getInteractions(commonName + ":" + DN, false);
-        else
+        } else {
             throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+        }
     }
 
     /**
@@ -88,30 +89,35 @@ public class JobsStatus {
     public List<GridInteraction> getJobStatus(@PathParam("commonName") String commonName,
             @PathParam("portal") String portal) {
 
-        List<GridInteraction> result = new ArrayList<GridInteraction>();
-        List<GridInteraction> tmp = getInteractions(commonName + ":" + DN, false);
+        if (!this.DN.equals("")) {
+            List<GridInteraction> result = new ArrayList<GridInteraction>();
+            List<GridInteraction> tmp = getInteractions(commonName + ":" + DN, false);
 
-        try {
-            int dbId = Integer.parseInt(portal);
-            for (GridInteraction a : tmp) {
-                if (dbId == a.getId()) {
-                    result.add(a);
+            try {
+                int dbId = Integer.parseInt(portal);
+                for (GridInteraction a : tmp) {
+                    if (dbId == a.getId()) {
+                        result.add(a);
+                    }
+                }
+            } catch (NumberFormatException ex) {
+                for (GridInteraction a : tmp) {
+                    if (a.getPortal().equals(portal)) {
+                        result.add(a);
+                    }
                 }
             }
-        } catch (NumberFormatException ex) {
-            for (GridInteraction a : tmp) {
-                if (a.getPortal().equals(portal)) {
-                    result.add(a);
-                }
-            }
-        }
 
 //        if (result.size() > 0) {
 //            return Response.status(Response.Status.OK).entity(result).build();
 //        } else {
 //            return Response.status(Response.Status.NOT_FOUND).build();
 //        }
-        return result;
+            return result;
+        } else {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+        }
+
     }
 
     /**
@@ -128,16 +134,22 @@ public class JobsStatus {
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     public List<GridInteraction> getJobStatus(@PathParam("commonName") String commonName,
             @PathParam("portal") String portal, @PathParam("application") String application) {
-        List<GridInteraction> result = new ArrayList<GridInteraction>();
-        List<GridInteraction> tmp = getInteractions(commonName + ":" + DN, false);
 
-        for (GridInteraction a : tmp) {
-            if (a.getPortal().equals(portal) && a.getApplication().equals(application)) {
-                result.add(a);
+        if (!this.DN.equals("")) {
+            List<GridInteraction> result = new ArrayList<GridInteraction>();
+            List<GridInteraction> tmp = getInteractions(commonName + ":" + DN, false);
+
+            for (GridInteraction a : tmp) {
+                if (a.getPortal().equals(portal) && a.getApplication().equals(application)) {
+                    result.add(a);
+                }
             }
+
+            return result;
+        } else {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
         }
 
-        return result;
     }
 
     /**
@@ -151,8 +163,11 @@ public class JobsStatus {
     @Path("/archive/{commonName}")
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     public List<GridInteraction> getJobArchive(@PathParam("commonName") String commonName) {
-        return getInteractions(commonName + ":" + DN, true);
-
+        if (!this.DN.equals("")) {
+            return getInteractions(commonName + ":" + DN, true);
+        } else {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+        }
     }
 
     /**
@@ -168,25 +183,29 @@ public class JobsStatus {
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     public List<GridInteraction> getJobArchive(@PathParam("commonName") String commonName,
             @PathParam("portal") String portal) {
-        List<GridInteraction> result = new ArrayList<GridInteraction>();
-        List<GridInteraction> tmp = getInteractions(commonName + ":" + DN, true);
+        if (!this.DN.equals("")) {
+            List<GridInteraction> result = new ArrayList<GridInteraction>();
+            List<GridInteraction> tmp = getInteractions(commonName + ":" + DN, true);
 
-        try {
-            int dbId = Integer.parseInt(portal);
-            for (GridInteraction a : tmp) {
-                if (dbId == a.getId()) {
-                    result.add(a);
+            try {
+                int dbId = Integer.parseInt(portal);
+                for (GridInteraction a : tmp) {
+                    if (dbId == a.getId()) {
+                        result.add(a);
+                    }
+                }
+            } catch (NumberFormatException ex) {
+                for (GridInteraction a : tmp) {
+                    if (a.getPortal().equals(portal)) {
+                        result.add(a);
+                    }
                 }
             }
-        } catch (NumberFormatException ex) {
-            for (GridInteraction a : tmp) {
-                if (a.getPortal().equals(portal)) {
-                    result.add(a);
-                }
-            }
+
+            return result;
+        } else {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
         }
-
-        return result;
 //        if (result.size() > 0) {
 //            return Response.status(Response.Status.OK).entity(result).build();
 //        } else {
@@ -208,16 +227,20 @@ public class JobsStatus {
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     public List<GridInteraction> getJobArchive(@PathParam("commonName") String commonName,
             @PathParam("portal") String portal, @PathParam("application") String application) {
-        List<GridInteraction> result = new ArrayList<GridInteraction>();
-        List<GridInteraction> tmp = getInteractions(commonName + ":" + DN, true);
+        if (!this.DN.equals("")) {
+            List<GridInteraction> result = new ArrayList<GridInteraction>();
+            List<GridInteraction> tmp = getInteractions(commonName + ":" + DN, true);
 
-        for (GridInteraction a : tmp) {
-            if (a.getPortal().equals(portal) && a.getApplication().equals(application)) {
-                result.add(a);
+            for (GridInteraction a : tmp) {
+                if (a.getPortal().equals(portal) && a.getApplication().equals(application)) {
+                    result.add(a);
+                }
             }
-        }
 
-        return result;
+            return result;
+        } else {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+        }
     }
 
     private List<GridInteraction> getInteractions(String commonName, boolean archived) {

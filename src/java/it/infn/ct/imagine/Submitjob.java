@@ -4,6 +4,7 @@
  */
 package it.infn.ct.imagine;
 
+import com.sun.jersey.multipart.FormDataParam;
 import it.infn.ct.imagine.pojos.SubmissionObject;
 import it.infn.ct.GridEngine.Job.InfrastructureInfo;
 import it.infn.ct.GridEngine.Job.MultiInfrastructureJobSubmission;
@@ -14,6 +15,9 @@ import it.infn.ct.imagine.filter.FilterRequest;
 import it.infn.ct.imagine.pojos.Credential;
 import it.infn.ct.imagine.pojos.Infrastructure;
 import it.infn.ct.imagine.pojos.JobDescription;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import javax.ejb.EJB;
@@ -30,6 +34,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * REST Web Service
@@ -41,16 +46,33 @@ public class Submitjob {
 
     @Context
     private UriInfo context;
-    
+
     @PersistenceContext(unitName = "IMAGINEPU")
-    private final EntityManagerFactory factory=Persistence.createEntityManagerFactory("IMAGINEPU");
-    
+    private final EntityManagerFactory factory = Persistence.createEntityManagerFactory("IMAGINEPU");
+
     private EntityManager em;
-    
+
     @EJB
     ClientDao clientDao = new ClientDao();
-    
+
     private final FilterRequest filter = new FilterRequest();
+
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public void submitJob(@FormDataParam("pippo") String param, @FormDataParam("json") File inputfile) throws FileNotFoundException, IOException {
+        System.out.println(param);
+
+        ObjectMapper mapper = new ObjectMapper();
+        SubmissionObject user = mapper.readValue(inputfile, SubmissionObject.class);
+        System.out.println(user.toString());
+//        BufferedReader br = new BufferedReader(new FileReader(inputfile));
+//        String line = null;
+//        String JsonString = "";
+//        while ((line = br.readLine()) != null) {
+//            JsonString += line;
+//        }
+//        SubmissionObject p = new SubmissionObject();
+    }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -73,7 +95,7 @@ public class Submitjob {
 
         if (infrastructure != null) {
             String wmsList[] = infrastructure.getResourceManagers().split(",");
-            String infrastructureName= (infrastructure.getName() != null) ? infrastructure.getName() : "";
+            String infrastructureName = (infrastructure.getName() != null) ? infrastructure.getName() : "";
             String middleware = wmsList[0].toString().substring(0, wmsList[0].toString().indexOf(":"));
             Credential credential = p.getCredential();
             switch (credential.getType()) {
@@ -110,7 +132,7 @@ public class Submitjob {
             multiInfrastructureJobSubmission.setUserEmail(p.getUserEmail());
         }
         multiInfrastructureJobSubmission.submitJobAsync(infrastructures[0], p.getCommonName() + ":" + DN, portalIPAddress, p.getApplication(), p.getIdentifier());
-        
+
         return Response.status(Response.Status.ACCEPTED).entity(p).build();
     }
 }

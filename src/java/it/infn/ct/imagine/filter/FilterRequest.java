@@ -23,8 +23,8 @@ import javax.ws.rs.core.Response;
  *
  * @author mario
  */
-
 enum AuthType {
+
     Basic, ApiKey
 }
 
@@ -61,13 +61,13 @@ public class FilterRequest {
             AuthType type = AuthType.valueOf(authType);
             switch (type) {
                 case Basic:
-                    if(!request.getRequestURI().contains("secure")){
+                    if (!request.getRequestURI().contains("secure")) {
                         String tmp = Base64.base64Decode(authValue);
                         String[] decriptedValues = tmp.split(":");
 
                         DN = decriptedValues[0];
                     }
-                    
+
                     break;
                 case ApiKey:
                     String date = request.getHeader("Timestamp");
@@ -96,6 +96,8 @@ public class FilterRequest {
                     break;
             }
 
+        } else {
+            throw new AuthenticationFilterException(new Error(Response.Status.UNAUTHORIZED, ErrorType.PROVIDE_AUTHZ, ErrorMessage.PROVIDE_AUTHZ));
         }
         return DN;
 

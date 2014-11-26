@@ -78,9 +78,9 @@ public class SubmissionObject {
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
     }
-
+   
     @Override
     public String toString() {
-        return "Prova{" + "commonName=" + commonName + ", application=" + application + ", identifier=" + identifier + ", userEmail=" + userEmail + '}';
-    }    
+        return "SubmissionObject{" + "commonName=" + commonName + ", application=" + application + ", identifier=" + identifier + ", userEmail=" + userEmail + '}';
+    }
 }
