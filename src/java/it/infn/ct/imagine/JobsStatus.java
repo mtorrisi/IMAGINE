@@ -10,8 +10,10 @@ import it.infn.ct.imagine.filter.AuthenticationRequestWrapper;
 import it.infn.ct.imagine.filter.ClientDao;
 import it.infn.ct.imagine.filter.FilterRequest;
 import it.infn.ct.imagine.pojos.GridInteraction;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -36,13 +38,14 @@ import javax.ws.rs.core.UriInfo;
 @Path("jobs/status")
 public class JobsStatus {
 
+    private static final Logger _log = Logger.getLogger(JobsStatus.class.getName());
     UsersTrackingDBInterface dbInterface = new UsersTrackingDBInterface();
 //    UsersTrackingDBInterface dbInterface = new UsersTrackingDBInterface("jdbc:mysql://localhost:3306/userstracking", "tracking_user", "usertracking");
     @Context
     private UriInfo context;
 
     @PersistenceContext(unitName = "IMAGINEPU")
-    private final EntityManagerFactory factory=Persistence.createEntityManagerFactory("IMAGINEPU");
+    private final EntityManagerFactory factory = Persistence.createEntityManagerFactory("IMAGINEPU");
 
     private EntityManager em;
 
@@ -53,9 +56,11 @@ public class JobsStatus {
 
     private final String DN;
 
-    public JobsStatus(@Context HttpServletRequest request) {
+    public JobsStatus(@Context HttpServletRequest request) throws NoSuchAlgorithmException {
         AuthenticationRequestWrapper requestWrapper = new AuthenticationRequestWrapper(request);
-        this.DN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
+        String tmpDN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
+        _log.info(tmpDN);
+        this.DN = Utility.getDNDigest(tmpDN);
     }
 
     /**

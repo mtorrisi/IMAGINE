@@ -12,7 +12,9 @@ import it.infn.ct.imagine.filter.ClientDao;
 import it.infn.ct.imagine.filter.FilterRequest;
 import it.infn.ct.imagine.pojos.GridInteraction;
 import java.io.File;
+import java.security.NoSuchAlgorithmException;
 import java.util.Vector;
+import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -36,31 +38,35 @@ import javax.ws.rs.core.Response;
 @Path("jobs/download")
 public class DownloadResource {
 
+    private static final Logger _log = Logger.getLogger(DownloadResource.class.getName());
 //    UsersTrackingDBInterface dbInterface = new UsersTrackingDBInterface("jdbc:mysql://localhost:3306/userstracking", "tracking_user", "usertracking");
     UsersTrackingDBInterface dbInterface = new UsersTrackingDBInterface();
 
     private final String DN;
-    
+
     @PersistenceContext(unitName = "IMAGINEPU")
-    private final EntityManagerFactory factory=Persistence.createEntityManagerFactory("IMAGINEPU");
-    
+    private final EntityManagerFactory factory = Persistence.createEntityManagerFactory("IMAGINEPU");
+
     private EntityManager em;
-    
+
     @EJB
     ClientDao clientDao = new ClientDao();
-    
+
     private final FilterRequest filter = new FilterRequest();
 
-    public DownloadResource(@Context HttpServletRequest request) {
+    public DownloadResource(@Context HttpServletRequest request) throws NoSuchAlgorithmException {
         AuthenticationRequestWrapper requestWrapper = new AuthenticationRequestWrapper(request);
-        this.DN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
+        String tmpDN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
+        _log.info(tmpDN);
+        this.DN = Utility.getDNDigest(tmpDN);
     }
-    
+
     /**
      * Retrieves the output archive for the specified completed job
+     *
      * @param commonName
      * @param dbId
-     * @param isCollection 
+     * @param isCollection
      * @return an instance of java.lang.String
      */
     @GET

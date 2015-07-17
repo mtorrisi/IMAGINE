@@ -9,6 +9,7 @@ import it.infn.ct.imagine.pojos.SubmissionObject;
 import it.infn.ct.GridEngine.Job.InfrastructureInfo;
 import it.infn.ct.GridEngine.Job.MultiInfrastructureJobSubmission;
 import it.infn.ct.GridEngine.JobResubmission.GEJobDescription;
+import static it.infn.ct.imagine.Utility.getDNDigest;
 import it.infn.ct.imagine.filter.AuthenticationRequestWrapper;
 import it.infn.ct.imagine.filter.ClientDao;
 import it.infn.ct.imagine.filter.FilterRequest;
@@ -18,8 +19,11 @@ import it.infn.ct.imagine.pojos.JobDescription;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import javax.ejb.EJB;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -77,7 +81,7 @@ public class Submitjob {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response submitJob(@Context HttpServletRequest request, SubmissionObject p) {
+    public Response submitJob(@Context HttpServletRequest request, SubmissionObject p) throws UnsupportedEncodingException, NoSuchAlgorithmException {
         AuthenticationRequestWrapper requestWrapper = new AuthenticationRequestWrapper(request);
         String DN = filter.doFilter(requestWrapper, clientDao, factory.createEntityManager());
         JobDescription jobDescription = p.getJobDescription();
@@ -96,7 +100,7 @@ public class Submitjob {
         if (infrastructure != null) {
             String wmsList[] = infrastructure.getResourceManagers().split(",");
             String infrastructureName = (infrastructure.getName() != null) ? infrastructure.getName() : "";
-            String middleware = wmsList[0].toString().substring(0, wmsList[0].toString().indexOf(":"));
+            String middleware = wmsList[0].substring(0, wmsList[0].indexOf(":"));
             Credential credential = p.getCredential();
             switch (credential.getType()) {
                 case proxy:
@@ -131,7 +135,7 @@ public class Submitjob {
         if (p.getUserEmail() != null) {
             multiInfrastructureJobSubmission.setUserEmail(p.getUserEmail());
         }
-        multiInfrastructureJobSubmission.submitJobAsync(infrastructures[0], p.getCommonName() + ":" + DN, portalIPAddress, p.getApplication(), p.getIdentifier());
+        multiInfrastructureJobSubmission.submitJobAsync(infrastructures[0], p.getCommonName() + ":" + getDNDigest(DN), portalIPAddress, p.getApplication(), p.getIdentifier());
 
         return Response.status(Response.Status.ACCEPTED).entity(p).build();
     }

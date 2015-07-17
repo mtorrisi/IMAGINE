@@ -123,7 +123,7 @@ public class FilterRequest {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(signingKey);
             byte[] rawHmac = mac.doFinal(toSign.toString().getBytes());
-
+            
             tmp = "";
             for (byte b : rawHmac) {
                 tmp += String.format("%02x", b);
